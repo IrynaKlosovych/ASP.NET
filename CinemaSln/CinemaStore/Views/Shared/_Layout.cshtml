@@ -1,0 +1,30 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"] - CinemaStore</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/css/bootstrap.min.css" />
+</head>
+<body>
+    <header class="bg-dark text-white p-3 mb-4">
+        <div class="container">
+            <h1 class="h3">CinemaStore</h1>
+            <nav>
+                <a href="/" class="text-white me-3">Головна</a>
+                <a href="/Home/Index" class="text-white">Фільми</a>
+            </nav>
+        </div>
+    </header>
+    <div class="container">
+        @RenderBody()
+    </div>
+    <footer class="bg-light text-center p-3 mt-4">
+        <div class="container">
+            &copy; 2025 CinemaStore
+        </div>
+    </footer>
+    <script src="~/lib/bootstrap/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+
