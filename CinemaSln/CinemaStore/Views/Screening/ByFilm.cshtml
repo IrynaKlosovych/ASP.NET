@@ -1,0 +1,17 @@
+﻿@model List<CinemaStore.Models.Screening>
+
+<h2>Сеанси для @ViewBag.FilmTitle</h2>
+
+@foreach (var s in Model)
+{
+    <div class="mb-2">
+        @s.StartTime.ToString("dd.MM.yyyy HH:mm") — @s.Hall
+        <a asp-controller="Screening"
+           asp-action="Choose"
+           asp-route-screeningId="@s.Id"
+           class="btn btn-success btn-sm">
+            Обрати місця
+        </a>
+    </div>
+}
+

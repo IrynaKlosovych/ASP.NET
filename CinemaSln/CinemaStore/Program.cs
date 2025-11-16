@@ -12,7 +12,17 @@ builder.Services.AddDbContext<CinemaStoreDbContext>(opts =>
 });
 builder.Services.AddScoped<ICinemaStoreRepository, EFStoreRepository>();
 
+builder.Services.AddDistributedMemoryCache();
+builder.Services.AddSession(options =>
+{
+    options.IdleTimeout = TimeSpan.FromMinutes(2); 
+    options.Cookie.HttpOnly = true;                 
+    options.Cookie.IsEssential = true;             
+});
+
 var app = builder.Build();
+
+app.UseSession();
 
 app.UseStaticFiles();
 

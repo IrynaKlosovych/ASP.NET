@@ -121,7 +121,67 @@ namespace CinemaStore.Models
                 );
                 context.SaveChanges();
             }
+            if (!context.Screenings.Any())
+            {
+                var films = context.Films.ToList();
+                var startDate = new DateTime(2025, 12, 1);
+
+                var halls = new[] { "Зал 1", "Зал 2", "Зал 3" };
+                int hallIndex = 0;
+
+                List<Screening> screenings = new();
+
+                foreach (var film in films)
+                {
+                    var screening1 = new Screening
+                    {
+                        FilmId = film.FilmID.Value,
+                        StartTime = startDate.AddHours(14),
+                        Hall = halls[hallIndex % halls.Length],
+                        IsOver = false
+                    };
+
+                    var screening2 = new Screening
+                    {
+                        FilmId = film.FilmID.Value,
+                        StartTime = startDate.AddHours(19),
+                        Hall = halls[(hallIndex + 1) % halls.Length],
+                        IsOver = false
+                    };
+
+                    hallIndex++;
+
+                    screenings.Add(screening1);
+                    screenings.Add(screening2);
+                }
+
+                context.Screenings.AddRange(screenings);
+                context.SaveChanges();
+
+                var rows = new[] { "A", "B", "C", "D", "E", "F", "G", "H", "I", "J" };
+                var allScreenings = context.Screenings.ToList();
+                List<Seat> seats = new();
+
+                foreach (var scr in allScreenings)
+                {
+                    foreach (var row in rows)
+                    {
+                        for (int num = 1; num <= 10; num++)
+                        {
+                            seats.Add(new Seat
+                            {
+                                ScreeningId = scr.Id,
+                                Row = row,
+                                Number = num,
+                                IsBooked = false
+                            });
+                        }
+                    }
+                }
+
+                context.Seats.AddRange(seats);
+                context.SaveChanges();
+            }
         }
     }
 }
-

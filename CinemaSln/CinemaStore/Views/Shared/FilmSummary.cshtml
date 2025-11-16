@@ -1,0 +1,23 @@
+﻿@model CinemaStore.Models.Film
+
+<div class="col">
+    <div class="card h-100 shadow-sm">
+        <div class="card-body">
+            <h5 class="card-title">@Model.Title</h5>
+            <p class="card-text">@Model.Description</p>
+            <ul class="list-unstyled mb-2">
+                <li><strong>Жанр:</strong> @Model.Genre</li>
+                <li><strong>Рейтинг:</strong> @Model.Rating</li>
+                <li><strong>Тривалість:</strong> @Model.DurationMinutes хв</li>
+                <li><strong>Дата виходу:</strong> @Model.ReleaseDate.ToString("dd.MM.yyyy")</li>
+            </ul>
+            <h6 class="text-success"><strong>Ціна квитка:</strong> @Model.TicketPrice.ToString("c")</h6>
+            <a asp-controller="Screening"
+               asp-action="ByFilm"
+               asp-route-filmId="@Model.FilmID"
+               class="text-black">
+                Сеанси
+            </a>
+        </div>
+    </div>
+</div>

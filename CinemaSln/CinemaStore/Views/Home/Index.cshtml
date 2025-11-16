@@ -9,21 +9,7 @@
 <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
     @foreach (var film in Model.Films)
     {
-        <div class="col">
-            <div class="card h-100 shadow-sm">
-                <div class="card-body">
-                    <h5 class="card-title">@film.Title</h5>
-                    <p class="card-text">@film.Description</p>
-                    <ul class="list-unstyled mb-2">
-                        <li><strong>Жанр:</strong> @film.Genre</li>
-                        <li><strong>Рейтинг:</strong> @film.Rating</li>
-                        <li><strong>Тривалість:</strong> @film.DurationMinutes хв</li>
-                        <li><strong>Дата виходу:</strong> @film.ReleaseDate.ToString("dd.MM.yyyy")</li>
-                    </ul>
-                    <h6 class="text-success"><strong>Ціна квитка:</strong> @film.TicketPrice.ToString("c")</h6>
-                </div>
-            </div>
-        </div>
+        <partial name="FilmSummary" model="film" />
     }
 </div>
 
@@ -52,25 +38,40 @@
         @if (Model.PagingInfo.CurrentPage > 1)
         {
             <li class="page-item">
-                <a class="page-link" href="@Url.Action("Index", new { page = Model.PagingInfo.CurrentPage - 1 })">← Попередня</a>
+                <a class="page-link"
+                   href="@Url.Action("Index", new { 
+                       page = Model.PagingInfo.CurrentPage - 1, 
+                       genre = Model.CurrentGenre 
+                   })">
+                    ← Попередня
+                </a>
             </li>
         }
 
         @for (int i = 1; i <= Model.PagingInfo.TotalPages; i++)
         {
             <li class="page-item @(i == Model.PagingInfo.CurrentPage ? "active" : "")">
-                <a class="page-link" href="@Url.Action("Index", new { page = i })">@i</a>
+                <a class="page-link"
+                   href="@Url.Action("Index", new { 
+                       page = i, 
+                       genre = Model.CurrentGenre 
+                   })">
+                    @i
+                </a>
             </li>
         }
 
         @if (Model.PagingInfo.CurrentPage < Model.PagingInfo.TotalPages)
         {
             <li class="page-item">
-                <a class="page-link" href="@Url.Action("Index", new { page = Model.PagingInfo.CurrentPage + 1 })">Наступна →</a>
+                <a class="page-link"
+                   href="@Url.Action("Index", new { 
+                       page = Model.PagingInfo.CurrentPage + 1, 
+                       genre = Model.CurrentGenre 
+                   })">
+                    Наступна →
+                </a>
             </li>
         }
     </ul>
 </nav>
-
-
-

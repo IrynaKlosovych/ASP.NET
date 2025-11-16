@@ -17,5 +17,6 @@ namespace CinemaStore.Models
         public string Genre { get; set; } = String.Empty;
         public int DurationMinutes { get; set; } 
         public DateTime ReleaseDate { get; set; }
+        public List<Screening> Screenings { get; set; } = new();
     }
 }

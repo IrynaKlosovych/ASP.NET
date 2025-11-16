@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace CinemaStore.Models
 {
@@ -10,6 +11,8 @@ namespace CinemaStore.Models
             context = ctx;
         }
         public IQueryable<Film> Films => context.Films;
+        public IQueryable<Screening> Screenings => context.Screenings.Include(s => s.Seats);
+
     }
 }
 

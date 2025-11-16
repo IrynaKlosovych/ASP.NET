@@ -1,0 +1,99 @@
+﻿@model CinemaStore.Models.Screening
+
+@{
+    ViewData["Title"] = $"Сеанс: {Model.Film?.Title ?? "Без назви"} ({Model.StartTime:dd.MM.yyyy HH:mm})";
+    var rows = new[] { "A", "B", "C", "D", "E", "F", "G", "H", "I", "J" };
+}
+
+<h2>@ViewData["Title"]</h2>
+<p>Зал: @Model.Hall</p>
+
+<div id="seatsContainer" style="display: grid; grid-template-columns: repeat(10, 50px); gap: 5px; margin-top: 20px;">
+    @foreach (var row in rows)
+    {
+        for (int number = 1; number <= 10; number++)
+        {
+            var seat = Model.Seats?.FirstOrDefault(s => s.Row == row && s.Number == number);
+            bool isBooked = seat != null && seat.IsBooked;
+
+            <button class="seat-btn @(isBooked ? "booked" : "")"
+                    data-seat="@row@number"
+                    @(isBooked ? "disabled" : "")>
+                @row@number
+            </button>
+        }
+    }
+</div>
+
+<p class="mt-3"><strong>Вибрані місця:</strong> <span id="selectedSeatsDisplay">немає</span></p>
+
+<style>
+    .seat-btn {
+        width: 50px;
+        height: 50px;
+        background: #e0e0e0;
+        border: 1px solid #999;
+        cursor: pointer;
+    }
+
+        .seat-btn:hover:not(.booked) {
+            background: #b0e0b0;
+        }
+
+        .seat-btn.booked {
+            background: #d9534f;
+            cursor: not-allowed;
+            color: white;
+        }
+
+        .seat-btn.selected {
+            background: #5cb85c;
+            color: white;
+        }
+</style>
+
+<script>
+    const seatsContainer = document.getElementById("seatsContainer");
+    const selectedSeatsDisplay = document.getElementById("selectedSeatsDisplay");
+    const screeningId = @Model.Id;
+    let selectedSeats = [];
+
+    fetch(`/Screening/GetSeats?screeningId=${screeningId}`)
+        .then(res => res.json())
+        .then(data => {
+            selectedSeats = data;
+            selectedSeats.forEach(seatId => {
+                const btn = document.querySelector(`[data-seat='${seatId}']`);
+                if (btn) btn.classList.add("selected");
+            });
+            updateSelectedSeatsDisplay();
+        });
+
+    function updateSelectedSeatsDisplay() {
+        selectedSeatsDisplay.textContent = selectedSeats.length > 0 ? selectedSeats.join(", ") : "немає";
+    }
+
+    seatsContainer.addEventListener("click", function(e) {
+        if (!e.target.classList.contains("seat-btn") || e.target.disabled) return;
+
+        const seatId = e.target.dataset.seat;
+
+        if (selectedSeats.includes(seatId)) {
+            fetch(`/Screening/RemoveSeat?screeningId=${screeningId}&seat=${seatId}`, { method: 'POST' })
+                .then(res => res.json())
+                .then(data => {
+                    selectedSeats = data;
+                    e.target.classList.remove("selected");
+                    updateSelectedSeatsDisplay();
+                });
+        } else {
+            fetch(`/Screening/AddSeat?screeningId=${screeningId}&seat=${seatId}`, { method: 'POST' })
+                .then(res => res.json())
+                .then(data => {
+                    selectedSeats = data;
+                    e.target.classList.add("selected");
+                    updateSelectedSeatsDisplay();
+                });
+        }
+    });
+</script>

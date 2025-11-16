@@ -1,0 +1,22 @@
+﻿@model CinemaStore.Models.ViewModels.NavigationMenuViewModel
+
+<ul class="list-group list-group-flush">
+    <li class="list-group-item">
+        <a asp-controller="Home"
+           asp-action="Index"
+           asp-route-category=""
+           class="@(Model.SelectedGenre == null ? "fw-bold text-primary" : "")">
+            Усі фільми
+        </a>
+    </li>
+
+    @foreach (var genre in Model.Genre)
+    {
+        <li class="list-group-item @(genre == Model.SelectedGenre ? "active" : "")">
+            <a class="text-decoration-none @(genre == Model.SelectedGenre ? "text-white" : "")"
+               href="@Url.Action("Index", "Home", new { genre = genre })">
+                @genre
+            </a>
+        </li>
+    }
+</ul>
