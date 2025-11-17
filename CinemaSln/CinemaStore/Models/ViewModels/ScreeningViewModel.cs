@@ -1,29 +1,33 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using System.ComponentModel.DataAnnotations;
 
-namespace CinemaStore.Models
+namespace CinemaStore.Models.ViewModels
 {
-    public class Screening
+    public class ScreeningViewModel
     {
         public int Id { get; set; }
 
         [Display(Name = "Фільм")]
         [Required(ErrorMessage = "Будь ласка, оберіть фільм")]
         public long FilmId { get; set; }
-        public Film Film { get; set; }
 
         [Display(Name = "Дата та час сеансу")]
-        [DataType(DataType.DateTime)]
         [Required(ErrorMessage = "Вкажіть дату та час сеансу")]
-        public DateTime StartTime { get; set; }
+        public string StartTime { get; set; } 
 
         [Display(Name = "Зал")]
         [Required(ErrorMessage = "Вкажіть номер залу")]
         [StringLength(50, ErrorMessage = "Назва залу не може перевищувати 50 символів")]
         public string Hall { get; set; }
 
-        public List<Seat> Seats { get; set; } = new List<Seat>();
-
         [Display(Name = "Сеанс завершено")]
         public bool IsOver { get; set; }
+
+        [BindNever]
+        [ValidateNever]
+        public IEnumerable<SelectListItem> Films { get; set; } = new List<SelectListItem>();
+
     }
 }

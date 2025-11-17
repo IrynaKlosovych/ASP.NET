@@ -1,0 +1,32 @@
+﻿@model CinemaStore.Models.Screening
+
+<h2>Деталі сеансу</h2>
+
+<div>
+    <hr />
+    <dl class="row">
+        <dt class="col-sm-3">Фільм</dt>
+        <dd class="col-sm-9">@Model.Film?.Title</dd>
+
+        <dt class="col-sm-3">Дата та час</dt>
+        <dd class="col-sm-9">@Model.StartTime.ToString("dd.MM.yyyy HH:mm")</dd>
+
+        <dt class="col-sm-3">Зал</dt>
+        <dd class="col-sm-9">@Model.Hall</dd>
+
+        <dt class="col-sm-3">Закінчений?</dt>
+        <dd class="col-sm-9">@((Model.IsOver) ? "Так" : "Ні")</dd>
+
+        <dt class="col-sm-3">Всього місць</dt>
+        <dd class="col-sm-9">@Model.Seats.Count</dd>
+
+        <dt class="col-sm-3">Заброньовані</dt>
+        <dd class="col-sm-9">@Model.Seats.Count(s => s.IsBooked)</dd>
+
+        <dt class="col-sm-3">Вільні</dt>
+        <dd class="col-sm-9">@Model.Seats.Count(s => !s.IsBooked)</dd>
+    </dl>
+</div>
+
+<a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">Редагувати</a>
+<a asp-action="Index" class="btn btn-secondary">Назад</a>

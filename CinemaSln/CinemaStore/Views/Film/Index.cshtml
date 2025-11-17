@@ -1,0 +1,30 @@
+﻿@model IEnumerable<CinemaStore.Models.Film>
+
+<h2>Список фільмів</h2>
+
+<p>
+    <a href="/Film/Create" class="btn btn-primary">Додати фільм</a>
+</p>
+
+<table class="table table-bordered">
+    <tr>
+        <th>ID</th>
+        <th>Назва</th>
+        <th>Жанр</th>
+        <th></th>
+    </tr>
+
+    @foreach (var film in Model)
+    {
+        <tr>
+            <td>@film.FilmID</td>
+            <td>@film.Title</td>
+            <td>@film.Genre</td>
+            <td>
+                <a href="/Film/Details/@film.FilmID">Деталі</a> |
+                <a href="/Film/Edit/@film.FilmID">Змінити</a> |
+                <a href="/Film/Delete/@film.FilmID">Видалити</a>
+            </td>
+        </tr>
+    }
+</table>

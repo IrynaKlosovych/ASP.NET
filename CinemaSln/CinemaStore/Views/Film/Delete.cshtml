@@ -1,0 +1,11 @@
+﻿@model CinemaStore.Models.Film
+
+<h2>Видалити фільм?</h2>
+
+<p>Ви дійсно хочете видалити <strong>@Model.Title</strong>?</p>
+
+<form method="post">
+    <input type="hidden" name="FilmID" value="@Model.FilmID" />
+    <button type="submit" class="btn btn-danger">Так, видалити</button>
+    <a href="/Film/Index" class="btn btn-secondary">Скасувати</a>
+</form>

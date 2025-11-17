@@ -1,0 +1,37 @@
+﻿@model CinemaStore.Models.Screening
+
+<h2>Видалити сеанс</h2>
+
+<div class="alert alert-danger">
+    Ви впевнені, що хочете видалити цей сеанс?
+</div>
+
+<table class="table table-bordered">
+    <tr>
+        <th>Фільм:</th>
+        <td>@Model.Film?.Title</td>
+    </tr>
+
+    <tr>
+        <th>Зал:</th>
+        <td>@Model.Hall</td>
+    </tr>
+
+    <tr>
+        <th>Початок:</th>
+        <td>@Model.StartTime.ToString("dd.MM.yyyy HH:mm")</td>
+    </tr>
+
+    <tr>
+        <th>Статус:</th>
+        <td>@(Model.IsOver ? "Завершено" : "Активний")</td>
+    </tr>
+</table>
+
+<form asp-action="Delete" method="post">
+    <input type="hidden" asp-for="Id" />
+
+    <button type="submit" class="btn btn-danger">Видалити</button>
+    <a asp-action="Index" class="btn btn-secondary">Назад</a>
+</form>
+

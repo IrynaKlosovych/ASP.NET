@@ -1,0 +1,44 @@
+﻿@model CinemaStore.Models.ViewModels.ScreeningViewModel
+
+<form asp-action="Create" method="post" novalidate>
+    <div class="form-group">
+        <label asp-for="FilmId"></label>
+        <select asp-for="FilmId" asp-items="Model.Films" class="form-control"></select>
+        <span asp-validation-for="FilmId" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="StartTime"></label>
+        <input asp-for="StartTime" class="form-control datetimepicker" placeholder="дд.мм.рррр --:--" />
+        <span asp-validation-for="StartTime" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="Hall"></label>
+        <input asp-for="Hall" class="form-control" />
+        <span asp-validation-for="Hall" class="text-danger"></span>
+    </div>
+
+    <div class="form-group form-check">
+        <input asp-for="IsOver" class="form-check-input" />
+        <label asp-for="IsOver" class="form-check-label"></label>
+    </div>
+
+    <button type="submit" class="btn btn-success">Створити</button>
+    <a asp-action="Index" class="btn btn-secondary">Назад</a>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/uk.js"></script>
+
+    <script>
+        flatpickr(".datetimepicker", {
+            enableTime: true,
+            dateFormat: "d.m.Y H:i",
+            locale: "uk"
+        });
+    </script>
+}

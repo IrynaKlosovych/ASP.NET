@@ -1,0 +1,30 @@
+﻿@model CinemaStore.Models.Film
+
+<h2>Інформація про фільм</h2>
+
+<p><strong>ID:</strong> @Model.FilmID</p>
+<p><strong>Назва:</strong> @Model.Title</p>
+<p><strong>Жанр:</strong> @Model.Genre</p>
+<p><strong>Опис:</strong> @Model.Description</p>
+<p><strong>Рейтинг:</strong> @Model.Rating</p>
+<p><strong>Ціна квитка:</strong> @Model.TicketPrice.ToString("C")</p>
+<p><strong>Тривалість:</strong> @Model.DurationMinutes хв</p>
+<p><strong>Дата виходу:</strong> @Model.ReleaseDate.ToString("dd.MM.yyyy")</p>
+
+<h3>Сеанси:</h3>
+
+@if (Model.Screenings != null && Model.Screenings.Any())
+{
+    <ul>
+        @foreach (var s in Model.Screenings)
+        {
+            <li>@s.StartTime.ToString("dd.MM.yyyy HH:mm")</li>
+        }
+    </ul>
+}
+else
+{
+    <p>Немає сеансів</p>
+}
+
+<p><a href="@Url.Action("Index", "Film")">Назад</a></p>

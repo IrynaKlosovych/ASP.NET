@@ -1,0 +1,28 @@
+﻿@model IEnumerable<CinemaStore.Models.Screening>
+
+<h2>Список сеансів</h2>
+
+<p>
+    <a href="/Screening/Create" class="btn btn-primary">Додати сеанс</a>
+</p>
+
+<table class="table table-bordered">
+    <tr>
+        <th>ID сеансу</th>
+        <th>Назва фільму</th>
+        <th></th>
+    </tr>
+
+    @foreach (var screening in Model)
+    {
+        <tr>
+            <td>@screening.Id</td>
+            <td>@screening.Film.Title</td>
+            <td>
+                <a href="/Screening/Details/@screening.Id">Деталі</a> |
+                <a href="/Screening/Edit/@screening.Id">Редагувати</a> |
+                <a href="/Screening/Delete/@screening.Id">Видалення</a>
+            </td>
+        </tr>
+    }
+</table>
