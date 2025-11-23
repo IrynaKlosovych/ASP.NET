@@ -1,9 +1,18 @@
 ﻿@model CinemaStore.Models.ViewModels.FilmsListViewModel
 
 @{
-    ViewData["Title"] = "Список фільмів";
+    @if (User.Identity.IsAuthenticated)
+    {
+        ViewData["Title"] = "Список фільмів";
+    }
+    else
+    {
+        ViewData["Title"] = "";
+    }
 }
 
+@if (User.Identity.IsAuthenticated)
+            {
 <h1 class="mb-4">Каталог фільмів</h1>
 
 <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
@@ -74,4 +83,19 @@
             </li>
         }
     </ul>
-</nav>
+    </nav>
+}
+else
+{
+     <div class="d-flex justify-content-center align-items-center" style="height: 60vh;">
+        <div class="card shadow-lg p-4 text-center" style="max-width: 400px; width: 100%;">
+            <h3 class="mb-3">Авторизація необхідна</h3>
+            <p class="text-muted mb-4">
+                Щоб переглядати каталог фільмів або бронювати квитки — увійдіть до акаунта.
+            </p>
+
+            <a href="/Account/Login" class="btn btn-primary w-100 mb-2">Увійти</a>
+            <a href="/Account/Register" class="btn btn-outline-secondary w-100">Створити акаунт</a>
+        </div>
+    </div>
+}
