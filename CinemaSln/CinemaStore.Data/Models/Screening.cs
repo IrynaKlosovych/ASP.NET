@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
-namespace CinemaStore.Models
+namespace CinemaStore.Data.Models
 {
     public class Screening
     {
@@ -9,7 +10,9 @@ namespace CinemaStore.Models
         [Display(Name = "Фільм")]
         [Required(ErrorMessage = "Будь ласка, оберіть фільм")]
         public long FilmId { get; set; }
-        public Film Film { get; set; }
+
+        [JsonIgnore]
+        public Film? Film { get; set; }
 
         [Display(Name = "Дата та час сеансу")]
         [DataType(DataType.DateTime)]

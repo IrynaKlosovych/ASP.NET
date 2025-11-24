@@ -1,7 +1,11 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using CinemaStore.Data.Context;
+using CinemaStore.Data.Models;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using static System.Net.Mime.MediaTypeNames;
 
-namespace CinemaStore.Models
+namespace CinemaStore.Data.Seed
 {
     public static class SeedData
     {

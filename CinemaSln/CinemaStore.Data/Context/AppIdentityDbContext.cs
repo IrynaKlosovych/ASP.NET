@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
-namespace CinemaStore.Models
+namespace CinemaStore.Data.Context
 {
     public class AppIdentityDbContext : IdentityDbContext<IdentityUser>
     {

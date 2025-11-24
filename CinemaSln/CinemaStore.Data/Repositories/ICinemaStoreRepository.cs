@@ -1,4 +1,6 @@
-﻿namespace CinemaStore.Models
+﻿using CinemaStore.Data.Models;
+
+namespace CinemaStore.Data.Repositories
 {
     public interface ICinemaStoreRepository
     {

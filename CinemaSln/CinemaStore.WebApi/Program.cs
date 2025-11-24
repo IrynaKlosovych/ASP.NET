@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.AspNetCore.Identity;
 using CinemaStore.Data.Context;
 using CinemaStore.Data.Repositories;
@@ -7,7 +6,7 @@ using CinemaStore.Data.Seed;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllersWithViews();
+builder.Services.AddControllers();
 
 builder.Services.AddDbContext<CinemaStoreDbContext>(opts =>
 {
@@ -15,17 +14,9 @@ builder.Services.AddDbContext<CinemaStoreDbContext>(opts =>
 });
 builder.Services.AddScoped<ICinemaStoreRepository, EFStoreRepository>();
 
-builder.Services.AddDistributedMemoryCache();
-builder.Services.AddSession(options =>
-{
-    options.IdleTimeout = TimeSpan.FromMinutes(2);
-    options.Cookie.HttpOnly = true;
-    options.Cookie.IsEssential = true;
-});
+builder.Services.AddDbContext<AppIdentityDbContext>(options =>
+    options.UseSqlServer(builder.Configuration["ConnectionStrings:IdentityConnection"]));
 
-builder.Services.AddDbContext<AppIdentityDbContext>
-    (options => options.UseSqlServer(
-        builder.Configuration["ConnectionStrings:IdentityConnection"]));
 builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
 {
     options.User.RequireUniqueEmail = true;
@@ -35,19 +26,15 @@ builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
     options.Password.RequireUppercase = true;
     options.Password.RequireNonAlphanumeric = false;
 })
-    .AddEntityFrameworkStores<AppIdentityDbContext>()
-    .AddDefaultTokenProviders();
+.AddEntityFrameworkStores<AppIdentityDbContext>()
+.AddDefaultTokenProviders();
 
 var app = builder.Build();
-
-app.UseSession();
 
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.UseStaticFiles();
-
-app.MapDefaultControllerRoute();
+app.MapControllers();
 
 SeedData.EnsurePopulated(app);
 await SeedRolesAndAdmin(app);

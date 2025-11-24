@@ -1,7 +1,9 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using CinemaStore.Data.Context;
+using CinemaStore.Data.Models;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Migrations;
 
-namespace CinemaStore.Models
+namespace CinemaStore.Data.Repositories
 {
     public class EFStoreRepository: ICinemaStoreRepository
     {

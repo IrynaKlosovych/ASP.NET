@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using CinemaStore.Models;
 using CinemaStore.Models.ViewModels;
+using CinemaStore.Data.Repositories;
 
 
 namespace CinemaStore.Components

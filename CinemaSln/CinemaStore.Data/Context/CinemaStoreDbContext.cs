@@ -1,8 +1,9 @@
 ﻿using System.Collections.Generic;
+using CinemaStore.Data.Models;
 using Microsoft.EntityFrameworkCore;
 
 
-namespace CinemaStore.Models
+namespace CinemaStore.Data.Context
 {
     public class CinemaStoreDbContext: DbContext
     {

@@ -1,4 +1,6 @@
-﻿using CinemaStore.Infrastructure;
+﻿using CinemaStore.Data.Models;
+using CinemaStore.Data.Repositories;
+using CinemaStore.Infrastructure;
 using CinemaStore.Models;
 using CinemaStore.Models.ViewModels;
 using Microsoft.AspNetCore.Mvc;

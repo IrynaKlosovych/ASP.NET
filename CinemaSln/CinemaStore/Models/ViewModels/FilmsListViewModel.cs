@@ -1,4 +1,6 @@
-﻿namespace CinemaStore.Models.ViewModels
+﻿using CinemaStore.Data.Models;
+
+namespace CinemaStore.Models.ViewModels
 {
     public class FilmsListViewModel
     {
