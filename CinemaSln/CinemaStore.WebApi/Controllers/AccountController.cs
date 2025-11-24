@@ -1,7 +1,8 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using CinemaStore.WebApi.Models;
+using CinemaStore.WebApi.Service;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using CinemaStore.WebApi.Models;
 
 namespace CinemaStore.WebApi.Controllers
 {
@@ -10,12 +11,12 @@ namespace CinemaStore.WebApi.Controllers
     public class AccountController : ControllerBase
     {
         private readonly UserManager<IdentityUser> _userManager;
-        private readonly SignInManager<IdentityUser> _signInManager;
+        private readonly JwtService _jwtService;
 
-        public AccountController(UserManager<IdentityUser> userManager, SignInManager<IdentityUser> signInManager)
+        public AccountController(UserManager<IdentityUser> userManager, JwtService jwtService)
         {
             _userManager = userManager;
-            _signInManager = signInManager;
+            _jwtService = jwtService;
         }
 
         private void AddIdentityErrors(IdentityResult result)
@@ -72,9 +73,10 @@ namespace CinemaStore.WebApi.Controllers
             }
 
             var user = await _userManager.FindByEmailAsync(model.Email);
-            await _signInManager.SignInAsync(user, false);
+            var roles = await _userManager.GetRolesAsync(user);
+            var token = _jwtService.GenerateToken(user, roles);
 
-            return Ok(new { message = "Користувач зареєстрований успішно" });
+            return Ok(new { message = "Користувач зареєстрований успішно", token });
         }
 
         [HttpPost("login")]
@@ -91,16 +93,10 @@ namespace CinemaStore.WebApi.Controllers
             if (!passwordCorrect)
                 return BadRequest(new { message = "Пароль неправильний" });
 
-            await _signInManager.SignInAsync(user, false);
-            return Ok(new { message = "Успішний вхід" });
-        }
+            var roles = await _userManager.GetRolesAsync(user);
+            var token = _jwtService.GenerateToken(user, roles);
 
-        [Authorize]
-        [HttpPost("logout")]
-        public async Task<IActionResult> Logout()
-        {
-            await _signInManager.SignOutAsync();
-            return Ok(new { message = "Вихід виконано" });
+            return Ok(new { message = "Успішний вхід", token });
         }
 
         [Authorize]
