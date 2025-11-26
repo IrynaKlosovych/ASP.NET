@@ -1,0 +1,128 @@
+﻿@page "/films/edit/{ID:long}"
+@using CinemaStore.Client.Models
+@inject NavigationManager Nav
+@inject HttpClient Http
+@inject IJSRuntime JS
+
+<h2>Редагування фільму</h2>
+
+<EditForm Model="FilmModel" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+
+    <div class="form-group">
+        <label>Назва</label>
+        <InputText @bind-Value="FilmModel.Title" class="form-control" placeholder="Вкажіть назву фільму" />
+        <ValidationMessage For="@(() => FilmModel.Title)" />
+    </div>
+
+    <div class="form-group">
+        <label>Опис</label>
+        <InputTextArea @bind-Value="FilmModel.Description" class="form-control" placeholder="Вкажіть опис" />
+        <ValidationMessage For="@(() => FilmModel.Description)" />
+    </div>
+
+    <div class="form-group">
+        <label>Рейтинг</label>
+        <InputNumber @bind-Value="FilmModel.Rating" class="form-control" placeholder="0–10" />
+        <ValidationMessage For="@(() => FilmModel.Rating)" />
+    </div>
+
+    <div class="form-group">
+        <label>Ціна квитка</label>
+        <InputNumber @bind-Value="FilmModel.TicketPrice" class="form-control" placeholder="Введіть ціну" />
+        <ValidationMessage For="@(() => FilmModel.TicketPrice)" />
+    </div>
+
+    <div class="form-group">
+        <label>Жанр</label>
+        <InputSelect @bind-Value="FilmModel.Genre" class="form-control">
+            <option value="">-- Оберіть жанр --</option>
+            @foreach (var g in Genres)
+            {
+                <option value="@g">@g</option>
+            }
+        </InputSelect>
+        <ValidationMessage For="@(() => FilmModel.Genre)" />
+    </div>
+
+    <div class="form-group">
+        <label>Тривалість (хв)</label>
+        <InputNumber @bind-Value="FilmModel.DurationMinutes" class="form-control" placeholder="Введіть тривалість" />
+        <ValidationMessage For="@(() => FilmModel.DurationMinutes)" />
+    </div>
+
+    <div class="form-group">
+        <label>Дата виходу</label>
+        <InputDate @bind-Value="FilmModel.ReleaseDate" class="form-control" />
+        <ValidationMessage For="@(() => FilmModel.ReleaseDate)" />
+    </div>
+
+    <button type="submit" class="btn btn-success">Зберегти</button>
+    <button type="button" class="btn btn-secondary" @onclick="GoBack">Назад</button>
+</EditForm>
+
+@code {
+    [Parameter] public long ID { get; set; }
+
+    private FilmBindViewModel FilmModel = new();
+    private List<string> Genres = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadGenres();
+        await LoadFilm();
+    }
+
+    private async Task LoadGenres()
+    {
+        var films = await Http.GetFromJsonAsync<List<FilmViewModel>>("api/film");
+
+        Genres = films?
+            .Where(f => !string.IsNullOrWhiteSpace(f.Genre))
+            .Select(f => f.Genre.Trim())
+            .Distinct()
+            .OrderBy(g => g)
+            .ToList() ?? new List<string>();
+    }
+
+    private async Task LoadFilm()
+    {
+        var film = await Http.GetFromJsonAsync<FilmBindViewModel>($"api/film/{ID}");
+        if (film != null)
+        {
+            FilmModel = film;
+        }
+    }
+
+    private void GoBack() => Nav.NavigateTo("/films");
+
+    private async Task HandleValidSubmit()
+    {
+        try
+        {
+            var token = await JS.InvokeAsync<string>("localStorage.getItem", "authToken");
+
+            var request = new HttpRequestMessage(HttpMethod.Put, $"api/film/{ID}")
+            {
+                Content = JsonContent.Create(FilmModel)
+            };
+            request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            var response = await Http.SendAsync(request);
+
+            if (response.IsSuccessStatusCode)
+            {
+                Nav.NavigateTo("/films");
+            }
+            else
+            {
+                var content = await response.Content.ReadAsStringAsync();
+                Console.Error.WriteLine($"Помилка при збереженні: {content}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Виняток при збереженні: {ex.Message}");
+        }
+    }
+}

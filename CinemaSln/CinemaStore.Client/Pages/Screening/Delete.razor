@@ -1,0 +1,98 @@
+﻿@page "/sessions/delete/{Id:int}"
+@using CinemaStore.Client.Models.Dto
+@inject HttpClient Http
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+
+<h3>Видалити сеанс</h3>
+
+@if (loading)
+{
+    <p>Завантаження...</p>
+}
+else if (screening == null)
+{
+    <div class="alert alert-danger">Сеанс не знайдено!</div>
+}
+else
+{
+    <div class="alert alert-danger">
+        Ви впевнені, що хочете видалити цей сеанс?
+    </div>
+
+    <table class="table table-bordered">
+        <tr>
+            <th>Фільм:</th>
+            <td>@screening.FilmTitle</td>
+        </tr>
+        <tr>
+            <th>Зал:</th>
+            <td>@screening.Hall</td>
+        </tr>
+        <tr>
+            <th>Початок:</th>
+            <td>@screening.StartTime</td>
+        </tr>
+        <tr>
+            <th>Статус:</th>
+            <td>@(screening.IsOver ? "Завершено" : "Активний")</td>
+        </tr>
+    </table>
+
+    <button class="btn btn-danger" @onclick="DeleteScreeningAsync">Видалити</button>
+    <button class="btn btn-secondary" @onclick="GoBack">Назад</button>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private GetAllScreenings? screening;
+    private bool loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            screening = await Http.GetFromJsonAsync<GetAllScreenings>(
+                $"api/screening/{Id}"
+            );
+        }
+        catch
+        {
+            screening = null;
+        }
+        loading = false;
+    }
+
+    private async Task DeleteScreeningAsync()
+    {
+        var token = await JS.InvokeAsync<string>("localStorage.getItem", "authToken");
+
+        if (string.IsNullOrEmpty(token))
+        {
+            Console.WriteLine("Token is missing!");
+            return;
+        }
+
+        var request = new HttpRequestMessage(HttpMethod.Delete, $"api/screening/{Id}");
+        request.Headers.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+        var response = await Http.SendAsync(request);
+
+        if (response.IsSuccessStatusCode)
+        {
+            Nav.NavigateTo("/sessions");
+        }
+        else
+        {
+            var err = await response.Content.ReadAsStringAsync();
+            Console.WriteLine("Error deleting screening: " + err);
+        }
+    }
+
+    private void GoBack()
+    {
+        Nav.NavigateTo("/sessions");
+    }
+}

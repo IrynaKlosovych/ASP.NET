@@ -1,6 +1,8 @@
 ﻿using CinemaStore.Data.Models;
 using CinemaStore.Data.Repositories;
 using CinemaStore.WebApi.Models;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -26,6 +28,7 @@ namespace CinemaStore.WebApi.Controllers
                 {
                     Id = s.Id,
                     FilmId = s.FilmId,
+                    FilmTitle = s.Film.Title,
                     Hall = s.Hall,
                     StartTime = s.StartTime,
                     IsOver = s.IsOver,
@@ -46,6 +49,7 @@ namespace CinemaStore.WebApi.Controllers
         {
             var screening = _context.Screenings
                 .Include(s => s.Seats)
+                .Include(s => s.Film)
                 .FirstOrDefault(s => s.Id == id);
 
             if (screening == null) return NotFound();
@@ -54,6 +58,7 @@ namespace CinemaStore.WebApi.Controllers
             {
                 Id = screening.Id,
                 FilmId = screening.FilmId,
+                FilmTitle = screening.Film.Title,
                 Hall = screening.Hall,
                 StartTime = screening.StartTime,
                 IsOver = screening.IsOver,
@@ -96,6 +101,7 @@ namespace CinemaStore.WebApi.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Admin", AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         public IActionResult Create([FromBody] Screening model)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -104,6 +110,7 @@ namespace CinemaStore.WebApi.Controllers
             return CreatedAtAction(nameof(Get), new { id = model.Id }, model);
         }
 
+        [Authorize(Roles = "Admin", AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpPut("{id}")]
         public IActionResult Update(int id, [FromBody] Screening model)
         {
@@ -119,6 +126,7 @@ namespace CinemaStore.WebApi.Controllers
             return Ok(screening);
         }
 
+        [Authorize(Roles = "Admin", AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpDelete("{id}")]
         public IActionResult Delete(int id)
         {

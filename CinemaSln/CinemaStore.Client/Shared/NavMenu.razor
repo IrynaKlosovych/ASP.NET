@@ -1,0 +1,58 @@
+﻿@using CinemaStore.Client.Models
+@inject HttpClient Http
+
+<ul class="list-group list-group-flush">
+    <li class="list-group-item">
+        <a class="text-decoration-none @(SelectedGenre == null ? "fw-bold text-primary" : "text-dark")"
+           @onclick="() => SelectGenre(null)"
+           style="cursor: pointer;"
+           onmouseover="this.style.textDecoration='underline';"
+           onmouseout="this.style.textDecoration='none';">
+            Усі фільми
+        </a>
+    </li>
+
+    @foreach (var genre in Genres)
+    {
+        <li class="list-group-item @(genre == SelectedGenre ? "active" : "")">
+            <a class="text-decoration-none @(genre == SelectedGenre ? "text-white" : "text-dark")"
+               @onclick="() => SelectGenre(genre)"
+               style="cursor: pointer;"
+               onmouseover="this.style.textDecoration='underline';"
+               onmouseout="this.style.textDecoration='none';">
+                @genre
+            </a>
+        </li>
+    }
+</ul>
+
+@code {
+    [Parameter] public string? SelectedGenre { get; set; }
+
+    [Parameter] public EventCallback<string?> SelectedGenreChanged { get; set; }
+
+    private List<string> Genres = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var films = await Http.GetFromJsonAsync<List<FilmViewModel>>("api/film");
+
+        Genres = films?
+            .Where(f => !string.IsNullOrWhiteSpace(f.Genre))
+            .Select(f => f.Genre.Trim())
+            .Distinct()
+            .OrderBy(g => g)
+            .ToList() ?? new List<string>();
+    }
+
+    private async Task SelectGenre(string? genre)
+    {
+        SelectedGenre = genre;
+        await SelectedGenreChanged.InvokeAsync(genre);
+
+        var url = genre != null ? $"/?genre={Uri.EscapeDataString(genre)}" : "/";
+        NavigationManager.NavigateTo(url);
+    }
+
+    [Inject] private NavigationManager NavigationManager { get; set; } = default!;
+}

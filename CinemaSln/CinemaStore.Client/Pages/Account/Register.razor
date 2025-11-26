@@ -1,0 +1,160 @@
+﻿@page "/register"
+@using System.ComponentModel.DataAnnotations
+@using CinemaStore.Client.Models
+@using System.Text.Json
+@using CinemaStore.Client.Providers
+@inject HttpClient Http
+@inject NavigationManager Nav
+@inject CustomAuthStateProvider AuthProvider
+@inject IJSRuntime JS
+
+<h3>Реєстрація</h3>
+
+@if (ServerMessage?.Any() == true)
+{
+    <div class="alert alert-danger">
+        @foreach (var msg in ServerMessage)
+        {
+            <div>@msg</div>
+        }
+    </div>
+}
+
+<EditForm Model="Model" OnValidSubmit="HandleRegister">
+    <DataAnnotationsValidator />
+
+    <div class="mb-3">
+        <label class="form-label">Електронна адреса</label>
+        <InputText @bind-Value="Model.Email" class="form-control" />
+        <ValidationMessage For="@(() => Model.Email)" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Пароль</label>
+        <InputText @bind-Value="Model.Password" class="form-control" type="password" />
+        <ValidationMessage For="@(() => Model.Password)" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Підтвердіть пароль</label>
+        <InputText @bind-Value="Model.ConfirmPassword" class="form-control" type="password" />
+        <ValidationMessage For="@(() => Model.ConfirmPassword)" />
+    </div>
+
+    <button class="btn btn-primary" type="submit">Зареєструватися</button>
+</EditForm>
+
+@code {
+    public class ApiValidationError
+    {
+        public Dictionary<string, string[]> Errors { get; set; }
+    }
+    private RegisterModel Model = new();
+    public List<string>? ServerMessage { get; set; }
+    private async Task HandleRegister()
+    {
+        ServerMessage = null;
+
+        try
+        {
+            Console.WriteLine("Відправляю дані на сервер...");
+            Console.WriteLine($"Email: {Model.Email}");
+
+            var response = await Http.PostAsJsonAsync("api/account/register", Model);
+
+            Console.WriteLine($"Отримано відповідь: {response.StatusCode}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                Console.WriteLine("Реєстрація успішна!");
+
+                var result = await response.Content.ReadFromJsonAsync<LoginResult>(
+    new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+                Console.WriteLine($"Отриманий токен: {result?.Token}");
+                Console.WriteLine($"Email: {result?.Email}, Role: {result?.Role}");
+
+                await AuthProvider.MarkUserAsAuthenticated(result.Email, result.Role);
+
+                await JS.InvokeVoidAsync("localStorage.setItem", "authToken", result.Token);
+
+                await JS.InvokeVoidAsync("console.log", "Перенаправляю на головну...");
+                Nav.NavigateTo("/", forceLoad: true);
+            }
+            else
+            {
+                var content = await response.Content.ReadAsStringAsync();
+                ServerMessage = ExtractErrorMessages(content);
+
+                foreach (var msg in ServerMessage)
+                    await JS.InvokeVoidAsync("console.error", msg);
+            }
+        }
+        catch (Exception ex)
+        {
+            ServerMessage = new List<string> { "Сталася помилка під час з'єднання з сервером: " + ex.Message };
+        }
+    }
+
+    private List<string> ExtractErrorMessages(string content)
+    {
+        var messages = new List<string>();
+
+        try
+        {
+            using var doc = JsonDocument.Parse(content);
+            var root = doc.RootElement;
+
+            if (root.TryGetProperty("message", out var msgProp))
+            {
+                messages.Add(msgProp.GetString() ?? "Помилка");
+                return messages;
+            }
+
+            if (root.TryGetProperty("errors", out var errorsProp))
+            {
+                foreach (var prop in errorsProp.EnumerateObject())
+                {
+                    if (prop.Value.ValueKind == JsonValueKind.Array)
+                    {
+                        foreach (var error in prop.Value.EnumerateArray())
+                        {
+                            messages.Add(error.GetString());
+                        }
+                    }
+                }
+
+                if (messages.Count > 0)
+                    return messages;
+            }
+
+            if (root.ValueKind == JsonValueKind.Object)
+            {
+                foreach (var prop in root.EnumerateObject())
+                {
+                    if (prop.Value.ValueKind == JsonValueKind.Array)
+                    {
+                        foreach (var error in prop.Value.EnumerateArray())
+                        {
+                            messages.Add(error.GetString());
+                        }
+                    }
+                }
+
+                if (messages.Count > 0)
+                    return messages;
+            }
+        }
+        catch
+        {
+        }
+
+        if (!string.IsNullOrWhiteSpace(content))
+            messages.Add(content);
+        else
+            messages.Add("Невідома помилка");
+
+        return messages;
+    }
+
+}

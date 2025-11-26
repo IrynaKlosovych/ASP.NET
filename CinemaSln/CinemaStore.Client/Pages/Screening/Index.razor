@@ -1,0 +1,90 @@
+﻿@page "/sessions"
+@using CinemaStore.Client.Models.Dto
+@using CinemaStore.Data.Models
+@inject NavigationManager Nav
+@inject HttpClient Http
+
+
+<h2>Список сеансів</h2>
+
+<p>
+    <button class="btn btn-primary" @onclick="AddScreening">Додати сеанс</button>
+</p>
+
+@if (Screenings == null)
+{
+    <p>Завантаження сеансів...</p>
+}
+else if (!Screenings.Any())
+{
+    <p>Сеансів немає.</p>
+}
+else
+{
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>ID сеансу</th>
+                <th>Назва фільму</th>
+                <th>Дії</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var screening in Screenings)
+            {
+                <tr>
+                    <td>@screening.Id</td>
+                    <td>@screening.FilmTitle</td>
+                    <td>
+                        <button class="btn btn-link p-0" @onclick="() => ViewDetails(screening.Id)">Деталі</button> |
+                        <button class="btn btn-link p-0" @onclick="() => EditScreening(screening.Id)">Редагувати</button> |
+                        <button class="btn btn-link p-0 text-danger" @onclick="() => DeleteScreening(screening.Id)">Видалення</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<GetAllScreenings>? Screenings;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            Screenings = await Http.GetFromJsonAsync<List<GetAllScreenings>>("api/screening");
+
+            if (Screenings == null)
+            {
+                Screenings = new List<GetAllScreenings>();
+            }
+        }
+        catch (HttpRequestException ex)
+        {
+            Console.Error.WriteLine($"Помилка завантаження сеансів: {ex.Message}");
+            Screenings = new List<GetAllScreenings>();
+        }
+    }
+
+
+    private void AddScreening()
+    {
+        Nav.NavigateTo("/sessions/create");
+    }
+
+    private void ViewDetails(int id)
+    {
+        Nav.NavigateTo($"/sessions/details/{id}");
+    }
+
+    private void EditScreening(int id)
+    {
+        Nav.NavigateTo($"/sessions/edit/{id}");
+    }
+
+    private void DeleteScreening(int id)
+    {
+        Nav.NavigateTo($"/sessions/delete/{id}");
+    }
+}

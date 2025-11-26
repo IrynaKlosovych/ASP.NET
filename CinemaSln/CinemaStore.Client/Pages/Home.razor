@@ -1,0 +1,172 @@
+﻿@page "/"
+@using CinemaStore.Client.Models
+@using CinemaStore.Client.Shared
+@using Microsoft.AspNetCore.Components.Authorization
+@inject NavigationManager NavManager
+@inject HttpClient Http
+
+<PageTitle>Каталог фільмів</PageTitle>
+
+<ErrorBoundary>
+    <ChildContent>
+        <AuthorizeView>
+            <Authorized>
+                <h1 class="mb-4">Каталог фільмів</h1>
+
+                @if (Films != null && Films.Any())
+                {
+                    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                        @foreach (var film in Films)
+                        {
+                            <FilmSummary Film="film" />
+                        }
+                    </div>
+                }
+                else
+                {
+                    <p>Фільми не знайдено</p>
+                }
+
+                <hr class="my-4" />
+
+                @if (paging.TotalPages > 1)
+                {
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <p class="mb-0">
+                            Поточна сторінка: <strong>@paging.CurrentPage</strong>
+                            з <strong>@paging.TotalPages</strong>
+                        </p>
+
+                        <div class="d-flex">
+                            <label class="me-2 my-auto">Перейти на сторінку:</label>
+                            <input type="number"
+                                   class="form-control me-2"
+                                   style="width: 100px;"
+                                   min="1"
+                                   max="@paging.TotalPages"
+                                   @bind="PageInput" />
+                            <button class="btn btn-primary" @onclick="GoToPageButton">Перейти</button>
+                        </div>
+                    </div>
+
+                    <nav aria-label="Pagination">
+                        <ul class="pagination justify-content-center">
+                            @if (paging.HasPrevious)
+                            {
+                                <li class="page-item">
+                                    <button class="page-link" @onclick="() => GoToPage(paging.CurrentPage - 1)">← Попередня</button>
+                                </li>
+                            }
+
+                            @for (int i = 1; i <= paging.TotalPages; i++)
+                            {
+                                <li class="page-item @(i == paging.CurrentPage ? "active" : "")">
+                                    <button class="page-link" @onclick="() => GoToPage(i)">@i</button>
+                                </li>
+                            }
+
+                            @if (paging.HasNext)
+                            {
+                                <li class="page-item">
+                                    <button class="page-link" @onclick="() => GoToPage(paging.CurrentPage + 1)">Наступна →</button>
+                                </li>
+                            }
+                        </ul>
+                    </nav>
+                }
+
+            </Authorized>
+
+            <NotAuthorized>
+                <div class="d-flex justify-content-center align-items-center" style="height: 60vh;">
+                    <div class="card shadow-lg p-4 text-center" style="max-width: 400px; width: 100%;">
+                        <h3 class="mb-3">Авторизація необхідна</h3>
+                        <p class="text-muted mb-4">
+                            Щоб переглядати каталог фільмів або бронювати квитки — увійдіть до акаунта.
+                        </p>
+
+                        <button class="btn btn-primary w-100 mb-2" @onclick="Login">Увійти</button>
+                        <button class="btn btn-outline-secondary w-100" @onclick="Register">Створити акаунт</button>
+                    </div>
+                </div>
+            </NotAuthorized>
+        </AuthorizeView>
+    </ChildContent>
+</ErrorBoundary>
+
+@code {
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "genre")]
+    public string? Genre { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "page")]
+    public int Page { get; set; } = 1;
+
+    public List<FilmBindViewModel>? Films { get; set; }
+    public PagingInfo paging = new PagingInfo();
+    private int PageInput;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        paging.CurrentPage = Page < 1 ? 1 : Page;
+        PageInput = paging.CurrentPage;
+
+        await LoadFilms();
+    }
+
+    private async Task LoadFilms()
+    {
+        var allFilms = await Http.GetFromJsonAsync<List<FilmBindViewModel>>("api/film");
+        if (allFilms == null)
+        {
+            Films = new List<FilmBindViewModel>();
+            return;
+        }
+
+        IEnumerable<FilmBindViewModel> query = allFilms;
+
+
+        foreach(var film in allFilms)
+        {
+            Console.WriteLine(film.Description);
+        }
+
+        if (!string.IsNullOrWhiteSpace(Genre))
+        {
+            query = query.Where(f => string.Equals(f.Genre?.Trim(), Genre.Trim(), StringComparison.OrdinalIgnoreCase));
+        }
+
+        paging.TotalItems = query.Count();
+
+        Films = query
+            .OrderBy(f => f.FilmID)
+            .Skip((paging.CurrentPage - 1) * paging.ItemsPerPage)
+            .Take(paging.ItemsPerPage)
+            .ToList();
+    }
+
+    private void GoToPage(int page)
+    {
+        if (page < 1) page = 1;
+        if (page > paging.TotalPages) page = paging.TotalPages;
+
+        paging.CurrentPage = page;
+        PageInput = page;
+
+        var url = $"/?page={page}";
+        if (!string.IsNullOrWhiteSpace(Genre))
+            url += $"&genre={Uri.EscapeDataString(Genre)}";
+
+        NavManager.NavigateTo(url);
+    }
+
+    private Task GoToPageButton()
+    {
+        GoToPage(PageInput);
+        return Task.CompletedTask;
+    }
+
+    private void Login() => NavManager.NavigateTo("/login");
+    private void Register() => NavManager.NavigateTo("/register");
+}

@@ -1,0 +1,84 @@
+﻿@page "/sessions/create"
+@using CinemaStore.Client.Models
+@using System.ComponentModel.DataAnnotations
+@using CinemaStore.Client.Models.Dto
+@inject HttpClient Http
+@inject NavigationManager Nav
+
+<h2>Створення сеансу</h2>
+
+<EditForm Model="ScreeningModel" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+
+    <div class="form-group">
+        <label>Фільм</label>
+        <InputSelect @bind-Value="ScreeningModel.FilmId" class="form-control">
+            <option value="">-- Оберіть фільм --</option>
+            @foreach (var f in Films)
+            {
+                <option value="@f.FilmID">@f.Title</option>
+            }
+        </InputSelect>
+        <ValidationMessage For="@(() => ScreeningModel.FilmId)" />
+    </div>
+
+    <div class="form-group">
+        <label>Дата і час</label>
+        <InputText type="datetime-local"
+                   @bind-Value="ScreeningModel.StartTime"
+                   @bind-Value:format="yyyy-MM-ddTHH:mm"
+                   class="form-control" />
+        <ValidationMessage For="@(() => ScreeningModel.StartTime)" />
+    </div>
+
+    <div class="form-group">
+        <label>Зал</label>
+        <InputText @bind-Value="ScreeningModel.Hall" class="form-control" />
+        <ValidationMessage For="@(() => ScreeningModel.Hall)" />
+    </div>
+
+    <div class="form-group form-check">
+        <InputCheckbox @bind-Value="ScreeningModel.IsOver" class="form-check-input" />
+        <label class="form-check-label">Сеанс завершено</label>
+    </div>
+
+    <button type="submit" class="btn btn-success">Створити</button>
+    <button type="button" class="btn btn-secondary" @onclick="GoBack">Назад</button>
+</EditForm>
+
+@code {
+    private ScreeningCreateModel ScreeningModel = new();
+    private List<FilmBindViewModel> Films = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        Films = await Http.GetFromJsonAsync<List<FilmBindViewModel>>("api/film");
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        var token = await JS.InvokeAsync<string>("localStorage.getItem", "authToken");
+
+        var request = new HttpRequestMessage(HttpMethod.Post, "api/screening")
+        {
+            Content = JsonContent.Create(ScreeningModel)
+        };
+        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+        var response = await Http.SendAsync(request);
+
+        if (response.IsSuccessStatusCode)
+        {
+            Nav.NavigateTo("/sessions");
+        }
+        else
+        {
+            var content = await response.Content.ReadAsStringAsync();
+            Console.Error.WriteLine($"Помилка при створенні сеансу: {content}");
+        }
+    }
+
+    private void GoBack() => Nav.NavigateTo("/sessions");
+
+    [Inject] private IJSRuntime JS { get; set; } = default!;
+}

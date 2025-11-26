@@ -1,10 +1,10 @@
-﻿namespace CinemaStore.WebApi.Models
+﻿namespace CinemaStore.Client.Models.Dto
 {
-    public class ScreeningDetailDto
+    public class GetAllScreenings
     {
         public int Id { get; set; }
         public long FilmId { get; set; }
-        public string  FilmTitle { get; set; }
+        public string FilmTitle { get; set; }
         public string Hall { get; set; }
         public DateTime StartTime { get; set; }
         public bool IsOver { get; set; }

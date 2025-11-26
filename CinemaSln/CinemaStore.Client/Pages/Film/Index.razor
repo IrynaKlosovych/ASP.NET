@@ -1,0 +1,62 @@
+﻿@page "/films"
+@using CinemaStore.Data.Models
+@inject HttpClient Http
+@inject NavigationManager Nav
+
+<h2>Список фільмів</h2>
+
+<p>
+    <button class="btn btn-primary" @onclick="CreateFilm">Додати фільм</button>
+</p>
+
+@if (Films == null)
+{
+    <p>Завантаження...</p>
+}
+else if (!Films.Any())
+{
+    <p>Немає фільмів.</p>
+}
+else
+{
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Назва</th>
+                <th>Жанр</th>
+                <th></th>
+            </tr>
+        </thead>
+
+        <tbody>
+            @foreach (var film in Films)
+            {
+                <tr>
+                    <td>@film.FilmID</td>
+                    <td>@film.Title</td>
+                    <td>@film.Genre</td>
+                    <td>
+                        <button class="btn btn-link p-0" @onclick="() => ViewDetails(film.FilmID)">Деталі</button> |
+                        <button class="btn btn-link p-0" @onclick="() => EditFilm(film.FilmID)">Редагувати</button> |
+                        <button class="btn btn-link p-0 text-danger" @onclick="() => DeleteFilm(film.FilmID)">Видалення</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<Film>? Films;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Films = await Http.GetFromJsonAsync<List<Film>>("api/film");
+    }
+
+    void CreateFilm() => Nav.NavigateTo("/films/create");
+    void ViewDetails(long? id) => Nav.NavigateTo($"/films/details/{id}");
+    void EditFilm(long? id) => Nav.NavigateTo($"/films/edit/{id}");
+    void DeleteFilm(long? id) => Nav.NavigateTo($"/films/delete/{id}");
+}

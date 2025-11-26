@@ -1,6 +1,8 @@
 ﻿using CinemaStore.Data.Models;
 using CinemaStore.Data.Repositories;
 using CinemaStore.WebApi.Models;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -26,6 +28,7 @@ namespace CinemaStore.WebApi.Controllers
                     FilmID = f.FilmID,
                     Title = f.Title,
                     Genre = f.Genre,
+                    Description = f.Description,
                     Rating = f.Rating,
                     TicketPrice = f.TicketPrice,
                     DurationMinutes = f.DurationMinutes,
@@ -50,6 +53,7 @@ namespace CinemaStore.WebApi.Controllers
                 FilmID = film.FilmID,
                 Title = film.Title,
                 Genre = film.Genre,
+                Description = film.Description,
                 Rating = film.Rating,
                 TicketPrice = film.TicketPrice,
                 DurationMinutes = film.DurationMinutes,
@@ -67,6 +71,7 @@ namespace CinemaStore.WebApi.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Admin", AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         public IActionResult Create([FromBody] Film model)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -79,6 +84,7 @@ namespace CinemaStore.WebApi.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize(Roles = "Admin", AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         public IActionResult Update(int id, [FromBody] Film model)
         {
             var film = _context.Films.FirstOrDefault(f => f.FilmID == id);
@@ -96,6 +102,7 @@ namespace CinemaStore.WebApi.Controllers
             return Ok(film);
         }
 
+        [Authorize(Roles = "Admin", AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpDelete("{id}")]
         public IActionResult Delete(int id)
         {

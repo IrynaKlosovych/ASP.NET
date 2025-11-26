@@ -1,0 +1,31 @@
+﻿@using CinemaStore.Client.Models
+@inject NavigationManager NavManager
+
+<div class="col">
+    <div class="card h-100 shadow-sm">
+        <div class="card-body">
+            <h5 class="card-title">@Film.Title</h5>
+            <p class="card-text">@Film.Description</p>
+            <ul class="list-unstyled mb-2">
+                <li><strong>Жанр:</strong> @Film.Genre</li>
+                <li><strong>Рейтинг:</strong> @Film.Rating</li>
+                <li><strong>Тривалість:</strong> @Film.DurationMinutes хв</li>
+                <li><strong>Дата виходу:</strong> @(Film.ReleaseDate?.ToString("dd.MM.yyyy") ?? "-")</li>
+            </ul>
+            <h6 class="text-success"><strong>Ціна квитка:</strong> @Film.TicketPrice.ToString("C")</h6>
+            <button class="btn btn-link p-0 text-black" @onclick="GoToScreenings">
+                Сеанси
+            </button>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public FilmBindViewModel Film { get; set; } = default!;
+
+    private void GoToScreenings()
+    {
+        NavManager.NavigateTo($"/{Film.FilmID}");
+    }
+}

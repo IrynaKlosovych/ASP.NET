@@ -1,0 +1,58 @@
+﻿@page "/films/delete/{FilmID:int}"
+@using CinemaStore.Client.Models
+@inject HttpClient Http
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+
+<h2>Видалити фільм?</h2>
+
+@if (Film != null)
+{
+    <p>Ви дійсно хочете видалити <strong>@Film.Title</strong>?</p>
+
+    <button class="btn btn-danger" @onclick="DeleteFilm">Так, видалити</button>
+    <button class="btn btn-secondary" @onclick="Cancel">Скасувати</button>
+}
+else
+{
+    <p>Завантаження...</p>
+}
+
+@code {
+    [Parameter] public int FilmID { get; set; }
+    private FilmBindViewModel? Film;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Film = await Http.GetFromJsonAsync<FilmBindViewModel>($"api/film/{FilmID}");
+    }
+
+    private async Task DeleteFilm()
+    {
+        try
+        {
+            var token = await JS.InvokeAsync<string>("localStorage.getItem", "authToken");
+
+            var request = new HttpRequestMessage(HttpMethod.Delete, $"api/film/{FilmID}");
+            request.Headers.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            var response = await Http.SendAsync(request);
+            if (response.IsSuccessStatusCode)
+            {
+                Nav.NavigateTo("/films");
+            }
+            else
+            {
+                var content = await response.Content.ReadAsStringAsync();
+                Console.Error.WriteLine($"Помилка при видаленні: {content}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Виняток при видаленні: {ex.Message}");
+        }
+    }
+
+    private void Cancel() => Nav.NavigateTo("/films");
+}

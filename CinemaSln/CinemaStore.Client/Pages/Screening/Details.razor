@@ -1,0 +1,71 @@
+﻿@page "/sessions/details/{ScreeningId:int}"
+@using CinemaStore.Client.Models.Dto
+@inject HttpClient Http
+@inject NavigationManager Nav
+
+<h2>Деталі сеансу</h2>
+
+@if (Screening == null)
+{
+    <p>Завантаження сеансу...</p>
+}
+else
+{
+    <div>
+        <hr />
+        <dl class="row">
+            <dt class="col-sm-3">Фільм</dt>
+            <dd class="col-sm-9">@Screening.FilmTitle</dd>
+
+            <dt class="col-sm-3">Дата та час</dt>
+            <dd class="col-sm-9">@Screening.StartTime.ToString("dd.MM.yyyy HH:mm")</dd>
+
+            <dt class="col-sm-3">Зал</dt>
+            <dd class="col-sm-9">@Screening.Hall</dd>
+
+            <dt class="col-sm-3">Закінчений?</dt>
+            <dd class="col-sm-9">@((Screening.IsOver) ? "Так" : "Ні")</dd>
+
+            <dt class="col-sm-3">Всього місць</dt>
+            <dd class="col-sm-9">@Screening.Seats.Count</dd>
+
+            <dt class="col-sm-3">Заброньовані</dt>
+            <dd class="col-sm-9">@Screening.Seats.Count(s => s.IsBooked)</dd>
+
+            <dt class="col-sm-3">Вільні</dt>
+            <dd class="col-sm-9">@Screening.Seats.Count(s => !s.IsBooked)</dd>
+        </dl>
+    </div>
+
+    <button class="btn btn-primary" @onclick="EditScreening">Редагувати</button>
+    <button class="btn btn-secondary" @onclick="GoBack">Назад</button>
+}
+
+@code {
+    [Parameter] public int ScreeningId { get; set; }
+
+    private GetAllScreenings? Screening;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            Screening = await Http.GetFromJsonAsync<GetAllScreenings>($"api/screening/{ScreeningId}");
+        }
+        catch (HttpRequestException ex)
+        {
+            Console.Error.WriteLine($"Помилка завантаження сеансу: {ex.Message}");
+        }
+    }
+
+    private void EditScreening()
+    {
+        if (Screening != null)
+            Nav.NavigateTo($"/sessions/edit/{Screening.Id}");
+    }
+
+    private void GoBack()
+    {
+        Nav.NavigateTo("/sessions");
+    }
+}

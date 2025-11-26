@@ -5,6 +5,7 @@
         public long? FilmID { get; set; }
         public string Title { get; set; }
         public string Genre { get; set; }
+        public string Description { get; set; }
         public decimal Rating { get; set; }
         public decimal TicketPrice { get; set; }
         public int DurationMinutes { get; set; }

@@ -1,8 +1,10 @@
 ﻿using CinemaStore.WebApi.Models;
 using CinemaStore.WebApi.Service;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using System.Data;
 
 namespace CinemaStore.WebApi.Controllers
 {
@@ -76,18 +78,26 @@ namespace CinemaStore.WebApi.Controllers
             var roles = await _userManager.GetRolesAsync(user);
             var token = _jwtService.GenerateToken(user, roles);
 
-            return Ok(new { message = "Користувач зареєстрований успішно", token });
+            var role = roles.FirstOrDefault() ?? "User";
+
+            return Ok(new
+            {
+                message = "Користувач зареєстрований успішно",
+                token,
+                email = user.Email,
+                role = role
+            });
         }
 
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginModel model)
         {
             if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+                return BadRequest(new { message = "Невірні дані" });
 
             var user = await _userManager.FindByEmailAsync(model.Email);
             if (user == null)
-                return NotFound(new { message = "Користувача з такою адресою не існує" });
+                return NotFound(new { message = "Користувача не знайдено" });
 
             var passwordCorrect = await _userManager.CheckPasswordAsync(user, model.Password);
             if (!passwordCorrect)
@@ -96,10 +106,17 @@ namespace CinemaStore.WebApi.Controllers
             var roles = await _userManager.GetRolesAsync(user);
             var token = _jwtService.GenerateToken(user, roles);
 
-            return Ok(new { message = "Успішний вхід", token });
+            return Ok(new
+            {
+                message = "Успішний вхід",
+                email = user.Email,
+                role = roles.FirstOrDefault(),
+                token = token
+            });
         }
 
-        [Authorize]
+
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpGet("profile")]
         public async Task<IActionResult> GetProfile()
         {
@@ -114,7 +131,7 @@ namespace CinemaStore.WebApi.Controllers
             });
         }
 
-        [Authorize]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpPut("profile")]
         public async Task<IActionResult> UpdateProfile([FromBody] ProfileModel model)
         {
@@ -168,7 +185,7 @@ namespace CinemaStore.WebApi.Controllers
             return Ok(new { message = updated ? "Дані оновлено!" : "Немає змін" });
         }
 
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin", AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpPost("add-admin")]
         public async Task<IActionResult> AddAdmin([FromBody] RegisterModel model)
         {

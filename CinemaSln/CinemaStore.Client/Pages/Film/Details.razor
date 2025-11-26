@@ -1,0 +1,59 @@
+﻿@page "/films/details/{Id:long}"
+@using CinemaStore.Data.Models
+@inject HttpClient Http
+@inject NavigationManager Nav
+
+<h2>Інформація про фільм</h2>
+
+@if (Film == null)
+{
+    <p>Завантаження...</p>
+}
+else
+{
+    <div class="card p-3 shadow-sm">
+        <p><strong>ID:</strong> @Film.FilmID</p>
+        <p><strong>Назва:</strong> @Film.Title</p>
+        <p><strong>Жанр:</strong> @Film.Genre</p>
+        <p><strong>Опис:</strong> @Film.Description</p>
+        <p><strong>Рейтинг:</strong> @Film.Rating</p>
+        <p><strong>Ціна квитка:</strong> @Film.TicketPrice.ToString("C")</p>
+        <p><strong>Тривалість:</strong> @Film.DurationMinutes хв</p>
+        <p><strong>Дата виходу:</strong> @Film.ReleaseDate.ToString("dd.MM.yyyy")</p>
+
+        <h3>Сеанси:</h3>
+
+        @if (Film.Screenings != null && Film.Screenings.Any())
+        {
+            <ul>
+                @foreach (var s in Film.Screenings)
+                {
+                    <li>@s.StartTime.ToString("dd.MM.yyyy HH:mm")</li>
+                }
+            </ul>
+        }
+        else
+        {
+            <p>Немає сеансів</p>
+        }
+    </div>
+
+    <button class="btn btn-secondary mt-3" @onclick="GoBack">Назад</button>
+}
+
+@code {
+    [Parameter]
+    public long Id { get; set; }
+
+    private Film? Film;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Film = await Http.GetFromJsonAsync<Film>($"api/film/{Id}");
+    }
+
+    private void GoBack()
+    {
+        Nav.NavigateTo("/films");
+    }
+}

@@ -1,0 +1,128 @@
+﻿@page "/profile"
+@using CinemaStore.Client.Models
+@using System.Net.Http.Headers
+@inject HttpClient Http
+@inject IJSRuntime JS
+
+<h2>Профіль</h2>
+
+@if (!string.IsNullOrEmpty(Message))
+{
+    <div class="alert alert-success">@Message</div>
+}
+
+<EditForm Model="profileModel" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+
+    <div class="form-group">
+        <label>Email</label>
+        <InputText @bind-Value="profileModel.Email" class="form-control" />
+        <ValidationMessage For="@(() => profileModel.Email)" />
+    </div>
+
+    <div class="form-group">
+        <label>Ім'я користувача</label>
+        <InputText @bind-Value="profileModel.UserName" class="form-control" />
+        <ValidationMessage For="@(() => profileModel.UserName)" />
+    </div>
+
+    <hr />
+    <h4>Зміна пароля</h4>
+
+    <div class="form-group">
+        <label>Поточний пароль</label>
+        <InputText @bind-Value="profileModel.CurrentPassword" type="password" class="form-control" />
+        <ValidationMessage For="@(() => profileModel.CurrentPassword)" />
+    </div>
+
+    <div class="form-group">
+        <label>Новий пароль</label>
+        <InputText @bind-Value="profileModel.NewPassword" type="password" class="form-control" />
+        <ValidationMessage For="@(() => profileModel.NewPassword)" />
+    </div>
+
+    <div class="form-group">
+        <label>Підтвердження пароля</label>
+        <InputText @bind-Value="profileModel.ConfirmPassword" type="password" class="form-control" />
+        <ValidationMessage For="@(() => profileModel.ConfirmPassword)" />
+    </div>
+
+    <button type="submit" class="btn btn-primary mt-2">Оновити профіль</button>
+</EditForm>
+
+@if (validationErrors.Any())
+{
+    <div class="alert alert-danger mt-2">
+        <ul>
+            @foreach (var error in validationErrors)
+            {
+                <li>@error</li>
+            }
+        </ul>
+    </div>
+}
+
+@code {
+    private ProfileModel profileModel = new ProfileModel();
+    private string Message = string.Empty;
+    private List<string> validationErrors = new List<string>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var tokenJson = await JS.InvokeAsync<string>("localStorage.getItem", "authToken");
+        if (!string.IsNullOrEmpty(tokenJson))
+        {
+            Http.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", tokenJson);
+        }
+
+        try
+        {
+            var user = await Http.GetFromJsonAsync<ProfileModel>("api/account/profile");
+            if (user != null)
+            {
+                profileModel.Email = user.Email;
+                profileModel.UserName = user.UserName;
+            }
+        }
+        catch
+        {
+            validationErrors.Add("Не вдалося завантажити дані профілю.");
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        validationErrors.Clear();
+        try
+        {
+            var token = await JS.InvokeAsync<string>("localStorage.getItem", "authToken");
+            if (string.IsNullOrEmpty(token))
+            {
+                validationErrors.Add("Токен не знайдено. Будь ласка, увійдіть.");
+                return;
+            }
+
+            var request = new HttpRequestMessage(HttpMethod.Put, "api/account/profile");
+            request.Content = JsonContent.Create(profileModel);
+            request.Headers.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            var response = await Http.SendAsync(request);
+            var apiResponse = await response.Content.ReadFromJsonAsync<ErrorResponse>();
+
+            if (response.IsSuccessStatusCode)
+            {
+                Message = apiResponse?.Message ?? "Профіль успішно оновлено!";
+            }
+            else
+            {
+                validationErrors.Add(apiResponse?.Message ?? "Сталася помилка при оновленні профілю.");
+            }
+        }
+        catch
+        {
+            validationErrors.Add("Помилка при з'єднанні з сервером.");
+        }
+    }
+}

@@ -1,0 +1,51 @@
+﻿@page "/{FilmID:long}"
+@using CinemaStore.Client.Models
+@using CinemaStore.Client.Models.Dto
+@inject HttpClient Http
+@inject NavigationManager Nav
+
+<h2>Сеанси для @FilmTitle</h2>
+
+@if (Screenings == null)
+{
+    <p>Завантаження сеансів...</p>
+}
+else if (!Screenings.Any())
+{
+    <p>Сеансів немає.</p>
+}
+else
+{
+    @foreach (var s in Screenings)
+    {
+        <div class="mb-2">
+            @($"{s.StartTime:dd.MM.yyyy HH:mm} — {s.Hall}")
+            <button class="btn btn-success btn-sm" @onclick="() => ChooseSeats(s.Id)">
+                Обрати місця
+            </button>
+        </div>
+    }
+}
+
+@code {
+    [Parameter] public long FilmID { get; set; }
+
+    private string FilmTitle = string.Empty;
+    private List<ScreeningDto>? Screenings;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var film = await Http.GetFromJsonAsync<FilmBindViewModel>($"api/film/{FilmID}");
+        if (film != null)
+        {
+            FilmTitle = film.Title;
+        }
+
+        Screenings = await Http.GetFromJsonAsync<List<ScreeningDto>>($"api/screening/byfilm/{FilmID}");
+    }
+
+    private void ChooseSeats(int screeningId)
+    {
+        Nav.NavigateTo($"/{FilmID}/choose/{screeningId}");
+    }
+}
