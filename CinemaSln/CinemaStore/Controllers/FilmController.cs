@@ -2,6 +2,7 @@
 using CinemaStore.Data.Repositories;
 using CinemaStore.Models;
 using CinemaStore.Models.ViewModels;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -17,12 +18,14 @@ namespace CinemaStore.Controllers
             _context = context;
         }
 
+        [Authorize]
         public IActionResult Index()
         {
             var films = _context.Films.ToList();
             return View(films);
         }
 
+        [Authorize]
         public IActionResult Details(int id)
         {
             var film = _context.Films
@@ -34,6 +37,7 @@ namespace CinemaStore.Controllers
             return View(film);
         }
 
+        [Authorize]
         public IActionResult Create()
         {
             return View(new FilmBindViewModel
@@ -57,6 +61,7 @@ namespace CinemaStore.Controllers
         }
 
         [HttpPost]
+        [Authorize]
         public IActionResult Create(FilmBindViewModel model)
         {
             if (!decimal.TryParse(model.Rating, out decimal rating) || rating < 0 || rating > 10)
@@ -94,6 +99,7 @@ namespace CinemaStore.Controllers
             return RedirectToAction("Index");
         }
 
+        [Authorize]
         public IActionResult Edit(int id)
         {
             var film = _context.Films.FirstOrDefault(f => f.FilmID == id);
@@ -115,6 +121,7 @@ namespace CinemaStore.Controllers
         }
 
         [HttpPost]
+        [Authorize]
         public IActionResult Edit(int id, FilmBindViewModel model)
         {
             if (!decimal.TryParse(model.Rating, out decimal rating) || rating < 0 || rating > 10)
@@ -152,7 +159,7 @@ namespace CinemaStore.Controllers
             return RedirectToAction("Index");
         }
 
-
+        [Authorize]
         public IActionResult Delete(int id)
         {
             var film = _context.Films.FirstOrDefault(f => f.FilmID == id);
@@ -161,6 +168,7 @@ namespace CinemaStore.Controllers
             return View(film);
         }
 
+        [Authorize]
         [HttpPost, ActionName("Delete")]
         public IActionResult DeleteConfirmed(int id)
         {

@@ -8,5 +8,6 @@
         public int Number { get; set; }
         public bool IsBooked { get; set; }
         public Screening Screening { get; set; }
+        public string? BookedByUserId { get; set; }
     }
 }

@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace CinemaStore.Migrations
+namespace CinemaStore.Data.Migrations
 {
     /// <inheritdoc />
     public partial class InitialCreate : Migration
@@ -12,6 +12,25 @@ namespace CinemaStore.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
+                name: "Films",
+                columns: table => new
+                {
+                    FilmID = table.Column<long>(type: "bigint", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Title = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: false),
+                    Rating = table.Column<decimal>(type: "decimal(3,1)", nullable: false),
+                    TicketPrice = table.Column<decimal>(type: "decimal(8,2)", nullable: false),
+                    Genre = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    DurationMinutes = table.Column<int>(type: "int", nullable: false),
+                    ReleaseDate = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Films", x => x.FilmID);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Screenings",
                 columns: table => new
                 {
@@ -19,7 +38,7 @@ namespace CinemaStore.Migrations
                         .Annotation("SqlServer:Identity", "1, 1"),
                     FilmId = table.Column<long>(type: "bigint", nullable: false),
                     StartTime = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    Hall = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Hall = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                     IsOver = table.Column<bool>(type: "bit", nullable: false)
                 },
                 constraints: table =>
@@ -42,7 +61,8 @@ namespace CinemaStore.Migrations
                     ScreeningId = table.Column<int>(type: "int", nullable: false),
                     Row = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Number = table.Column<int>(type: "int", nullable: false),
-                    IsBooked = table.Column<bool>(type: "bit", nullable: false)
+                    IsBooked = table.Column<bool>(type: "bit", nullable: false),
+                    BookedByUserId = table.Column<string>(type: "nvarchar(max)", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -74,6 +94,9 @@ namespace CinemaStore.Migrations
 
             migrationBuilder.DropTable(
                 name: "Screenings");
+
+            migrationBuilder.DropTable(
+                name: "Films");
         }
     }
 }

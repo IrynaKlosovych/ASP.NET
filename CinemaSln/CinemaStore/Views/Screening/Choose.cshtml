@@ -1,8 +1,8 @@
-﻿@model CinemaStore.Data.Models.Screening
-
+﻿@model CinemaStore.Models.ViewModels.ScreeningWithSeatsViewModel
 @{
-    ViewData["Title"] = $"Сеанс: {Model.Film?.Title ?? "Без назви"} ({Model.StartTime:dd.MM.yyyy HH:mm})";
+    ViewData["Title"] = $"Сеанс: {Model.FilmTitle} ({Model.StartTime:dd.MM.yyyy HH:mm})";
     var rows = new[] { "A", "B", "C", "D", "E", "F", "G", "H", "I", "J" };
+    var currentUserId = ViewData["CurrentUserId"]?.ToString();
 }
 
 <h2>@ViewData["Title"]</h2>
@@ -13,12 +13,13 @@
     {
         for (int number = 1; number <= 10; number++)
         {
-            var seat = Model.Seats?.FirstOrDefault(s => s.Row == row && s.Number == number);
-            bool isBooked = seat != null && seat.IsBooked;
+            var seat = Model.Seats.FirstOrDefault(s => s.Row == row && s.Number == number);
+            bool isBooked = seat?.IsBooked ?? false;
+            bool isMine = seat?.BookedByUserId == currentUserId;
 
-            <button class="seat-btn @(isBooked ? "booked" : "")"
+            <button class="seat-btn @(isBooked ? (isMine ? "my-seat" : "booked") : "")"
                     data-seat="@row@number"
-                    @(isBooked ? "disabled" : "")>
+                    @(isBooked && !isMine ? "disabled" : "")>
                 @row@number
             </button>
         }
@@ -31,69 +32,120 @@
     .seat-btn {
         width: 50px;
         height: 50px;
-        background: #e0e0e0;
         border: 1px solid #999;
         cursor: pointer;
+        background: #e0e0e0;
     }
 
-        .seat-btn:hover:not(.booked) {
+        .seat-btn:hover:not(.booked):not(.my-seat) {
             background: #b0e0b0;
         }
 
         .seat-btn.booked {
             background: #d9534f;
-            cursor: not-allowed;
             color: white;
+            cursor: not-allowed;
         }
 
-        .seat-btn.selected {
+        .seat-btn.my-seat {
             background: #5cb85c;
             color: white;
         }
 </style>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
 <script>
     const seatsContainer = document.getElementById("seatsContainer");
     const selectedSeatsDisplay = document.getElementById("selectedSeatsDisplay");
-    const screeningId = @Model.Id;
-    let selectedSeats = [];
+    const screeningId = @Model.ScreeningId;
+    const currentUserId = "@currentUserId";
 
-    fetch(`/Screening/GetSeats?screeningId=${screeningId}`)
-        .then(res => res.json())
-        .then(data => {
-            selectedSeats = data;
-            selectedSeats.forEach(seatId => {
-                const btn = document.querySelector(`[data-seat='${seatId}']`);
-                if (btn) btn.classList.add("selected");
-            });
-            updateSelectedSeatsDisplay();
-        });
+    let selectedSeats = [];
+    let bookedSeats = [];
+
+    const connection = new signalR.HubConnectionBuilder()
+        .withUrl("/seatHub")
+        .withAutomaticReconnect()
+        .build();
+
+    connection.start().then(() => console.log("SignalR connected"))
+        .catch(err => console.error(err));
+
+    connection.on("SeatAdded", (sId, seat, userId) => {
+        if (sId !== screeningId) return;
+        const btn = document.querySelector(`[data-seat='${seat}']`);
+        if (!btn) return;
+
+        if (userId === currentUserId) {
+            btn.classList.add("my-seat");
+            if (!selectedSeats.includes(seat)) selectedSeats.push(seat);
+        } else {
+            btn.classList.add("booked");
+            btn.disabled = true;
+            if (!bookedSeats.includes(seat)) bookedSeats.push(seat);
+        }
+        updateSelectedSeatsDisplay();
+    });
+
+    connection.on("SeatRemoved", (sId, seat, userId) => {
+        if (sId !== screeningId) return;
+        const btn = document.querySelector(`[data-seat='${seat}']`);
+        if (!btn) return;
+
+        if (userId === currentUserId) {
+            btn.classList.remove("my-seat");
+            selectedSeats = selectedSeats.filter(s => s !== seat);
+        } else {
+            btn.classList.remove("booked");
+            btn.disabled = false;
+            bookedSeats = bookedSeats.filter(s => s !== seat);
+        }
+        updateSelectedSeatsDisplay();
+    });
 
     function updateSelectedSeatsDisplay() {
         selectedSeatsDisplay.textContent = selectedSeats.length > 0 ? selectedSeats.join(", ") : "немає";
     }
 
-    seatsContainer.addEventListener("click", function(e) {
-        if (!e.target.classList.contains("seat-btn") || e.target.disabled) return;
+    fetch(`/Screening/GetSeats?screeningId=${screeningId}`)
+     .then(res => res.json())
+     .then(data => {
+         selectedSeats = [];
+         bookedSeats = [];
 
+         data.forEach(seat => {
+             const btn = document.querySelector(`[data-seat='${seat.SeatId}']`);
+             if (!btn) return;
+
+             if (seat.BookedByUserId === currentUserId) {
+                 btn.classList.add("my-seat");
+                 selectedSeats.push(seat.SeatId);
+             } else if (seat.IsBooked) {
+                 btn.classList.add("booked");
+                 btn.disabled = true;
+                 bookedSeats.push(seat.SeatId);
+             }
+         });
+
+         selectedSeatsDisplay.textContent = selectedSeats.length > 0 ? selectedSeats.join(", ") : "немає";
+     });
+
+    seatsContainer.addEventListener("click", function(e) {
+        if (!e.target.classList.contains("seat-btn")) return;
         const seatId = e.target.dataset.seat;
 
         if (selectedSeats.includes(seatId)) {
-            fetch(`/Screening/RemoveSeat?screeningId=${screeningId}&seat=${seatId}`, { method: 'POST' })
-                .then(res => res.json())
-                .then(data => {
-                    selectedSeats = data;
-                    e.target.classList.remove("selected");
-                    updateSelectedSeatsDisplay();
-                });
-        } else {
-            fetch(`/Screening/AddSeat?screeningId=${screeningId}&seat=${seatId}`, { method: 'POST' })
-                .then(res => res.json())
-                .then(data => {
-                    selectedSeats = data;
-                    e.target.classList.add("selected");
-                    updateSelectedSeatsDisplay();
-                });
+            fetch(`/Screening/RemoveSeat?screeningId=${screeningId}&seat=${seatId}`, { method:'POST' });
+            selectedSeats = selectedSeats.filter(s => s !== seatId);
+            e.target.classList.remove("my-seat");
+            updateSelectedSeatsDisplay();
+        }
+        else if (!bookedSeats.includes(seatId)) {
+            fetch(`/Screening/AddSeat?screeningId=${screeningId}&seat=${seatId}`, { method:'POST' });
+            selectedSeats.push(seatId);
+            e.target.classList.add("my-seat");
+            updateSelectedSeatsDisplay();
         }
     });
 </script>
+

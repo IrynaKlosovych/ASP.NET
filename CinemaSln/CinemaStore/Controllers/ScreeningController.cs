@@ -1,11 +1,15 @@
 ﻿using CinemaStore.Data.Models;
 using CinemaStore.Data.Repositories;
+using CinemaStore.Hubs;
 using CinemaStore.Infrastructure;
 using CinemaStore.Models;
 using CinemaStore.Models.ViewModels;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 using System.Text.Json;
 
 namespace CinemaStore.Controllers
@@ -13,12 +17,16 @@ namespace CinemaStore.Controllers
     public class ScreeningController : Controller
     {
         private readonly ICinemaStoreRepository _context;
+        private readonly IHubContext<SeatHub> _seatHub;
 
-        public ScreeningController(ICinemaStoreRepository context)
+
+        public ScreeningController(ICinemaStoreRepository context, IHubContext<SeatHub> seatHub)
         {
             _context = context;
+            _seatHub = seatHub;
         }
 
+        [Authorize]
         public IActionResult ByFilm(long filmId)
         {
             var screenings = _context.Screenings
@@ -35,41 +43,85 @@ namespace CinemaStore.Controllers
             return View(screenings);
         }
 
+        [Authorize]
         public IActionResult Choose(int screeningId)
         {
             var screening = _context.Screenings
-                .Include(s => s.Film)
                 .Include(s => s.Seats)
+                .Include(s=>s.Film)
                 .FirstOrDefault(s => s.Id == screeningId);
 
-            if (screening == null)
-                return NotFound();
+            if (screening == null) return NotFound();
 
-            return View(screening);
+            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            var seats = screening.Seats.Select(s => new SeatViewModel
+            {
+                Id = s.Id,
+                Row = s.Row,
+                Number = s.Number,
+                IsBooked = s.IsBooked,
+                BookedByUserId = s.BookedByUserId
+            }).ToList();
+
+            ViewData["CurrentUserId"] = currentUserId;
+
+            return View(new ScreeningWithSeatsViewModel
+            {
+                ScreeningId = screening.Id,
+                FilmTitle = screening.Film?.Title,
+                StartTime = screening.StartTime,
+                Hall = screening.Hall,
+                Seats = seats
+            });
         }
 
         [HttpPost]
-        public IActionResult AddSeat(int screeningId, string seat)
+        [Authorize]
+        public async Task<IActionResult> AddSeat(int screeningId, string seat)
         {
-            var selectedSeatsDict = HttpContext.Session.GetJson<Dictionary<int, List<string>>>("SelectedSeats")
-                                    ?? new Dictionary<int, List<string>>();
+            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            if (!selectedSeatsDict.ContainsKey(screeningId))
-                selectedSeatsDict[screeningId] = new List<string>();
+            var screening = _context.Screenings.FirstOrDefault(s => s.Id == screeningId);
+            if (screening == null) return NotFound();
 
-            if (!selectedSeatsDict[screeningId].Contains(seat))
-                selectedSeatsDict[screeningId].Add(seat);
+            var s = screening.Seats.FirstOrDefault(x => (x.Row + x.Number) == seat);
+            if (s == null) return NotFound();
+            if (s.IsBooked) return BadRequest("Місце вже заброньоване");
 
-            HttpContext.Session.SetJson("SelectedSeats", selectedSeatsDict);
+            s.IsBooked = true;
+            s.BookedByUserId = currentUserId;
+            _context.UpdateScreening(screening);
 
+            await _seatHub.Clients.All.SendAsync("SeatAdded", screeningId, seat, currentUserId);
 
-            var seats = HttpContext.Session.GetJson<Dictionary<int, List<string>>>("SelectedSeats");
-            Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(seats));
+            return Ok(new { seat, userId = currentUserId });
+        }
 
-            return Ok(selectedSeatsDict[screeningId]);
+        [HttpPost]
+        [Authorize]
+        public async Task<IActionResult> RemoveSeat(int screeningId, string seat)
+        {
+            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            var screening = _context.Screenings.FirstOrDefault(s => s.Id == screeningId);
+            if (screening == null) return NotFound();
+
+            var s = screening.Seats.FirstOrDefault(x => (x.Row + x.Number) == seat);
+            if (s == null || s.BookedByUserId != currentUserId)
+                return BadRequest("Неможливо зняти бронь");
+
+            s.IsBooked = false;
+            s.BookedByUserId = null;
+            _context.UpdateScreening(screening); 
+
+            await _seatHub.Clients.All.SendAsync("SeatRemoved", screeningId, seat, currentUserId);
+
+            return Ok(new { seat, userId = currentUserId });
         }
 
         [HttpGet]
+        [Authorize]
         public IActionResult GetSeats(int screeningId)
         {
             var selectedSeatsDict = HttpContext.Session.GetJson<Dictionary<int, List<string>>>("SelectedSeats")
@@ -83,29 +135,7 @@ namespace CinemaStore.Controllers
             return Json(selectedSeatsDict.ContainsKey(screeningId) ? selectedSeatsDict[screeningId] : new List<string>());
         }
 
-        [HttpPost]
-        public IActionResult RemoveSeat(int screeningId, string seat)
-        {
-            var selectedSeatsDict = HttpContext.Session.GetJson<Dictionary<int, List<string>>>("SelectedSeats");
-
-            if (selectedSeatsDict != null && selectedSeatsDict.ContainsKey(screeningId))
-            {
-                selectedSeatsDict[screeningId].Remove(seat);
-
-                if (selectedSeatsDict[screeningId].Count == 0)
-                    selectedSeatsDict.Remove(screeningId);
-
-                HttpContext.Session.SetJson("SelectedSeats", selectedSeatsDict);
-            }
-
-            var seats = HttpContext.Session.GetJson<Dictionary<int, List<string>>>("SelectedSeats");
-            Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(seats));
-
-            return Ok(selectedSeatsDict != null && selectedSeatsDict.ContainsKey(screeningId)
-                      ? selectedSeatsDict[screeningId]
-                      : new List<string>());
-        }
-
+        [Authorize]
         public IActionResult Index()
         {
             var screenings = _context.Screenings
@@ -115,6 +145,7 @@ namespace CinemaStore.Controllers
             return View(screenings);
         }
 
+        [Authorize]
         public IActionResult Details(int id)
         {
             var screening = _context.Screenings
@@ -127,6 +158,7 @@ namespace CinemaStore.Controllers
             return View(screening);
         }
 
+        [Authorize]
         public IActionResult Create()
         {
             var model = new ScreeningViewModel
@@ -144,6 +176,7 @@ namespace CinemaStore.Controllers
         }
 
         [HttpPost]
+        [Authorize]
         public IActionResult Create(ScreeningViewModel model)
         {
             if (!ModelState.IsValid)
@@ -176,7 +209,7 @@ namespace CinemaStore.Controllers
             return RedirectToAction("Index");
         }
 
-
+        [Authorize]
         public IActionResult Edit(int id)
         {
             var screening = _context.Screenings.FirstOrDefault(s => s.Id == id);
@@ -202,6 +235,7 @@ namespace CinemaStore.Controllers
         }
 
         [HttpPost]
+        [Authorize]
         public IActionResult Edit(ScreeningViewModel model)
         {
             if (!ModelState.IsValid)
@@ -235,6 +269,7 @@ namespace CinemaStore.Controllers
             return RedirectToAction("Index");
         }
 
+        [Authorize]
         public IActionResult Delete(int id)
         {
             var screening = _context.Screenings
@@ -249,6 +284,7 @@ namespace CinemaStore.Controllers
         }
 
         [HttpPost, ActionName("Delete")]
+        [Authorize]
         public IActionResult DeleteConfirmed(int id)
         {
             var screening = _context.Screenings.FirstOrDefault(s => s.Id == id);

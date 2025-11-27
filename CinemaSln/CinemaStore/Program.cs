@@ -38,7 +38,10 @@ builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
     .AddEntityFrameworkStores<AppIdentityDbContext>()
     .AddDefaultTokenProviders();
 
+builder.Services.AddSignalR();
+
 var app = builder.Build();
+app.MapHub<CinemaStore.Hubs.SeatHub>("/seatHub");
 
 app.UseSession();
 
